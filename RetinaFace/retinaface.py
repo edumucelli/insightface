@@ -2,26 +2,34 @@ import cv2
 import mxnet as mx
 import numpy as np
 from mxnet import ndarray as nd
+import os
 
-from rcnn.processing.bbox_transform import clip_boxes
-from rcnn.processing.generate_anchor import generate_anchors_fpn, anchors_plane
-from rcnn.processing.nms import gpu_nms_wrapper, cpu_nms_wrapper
+try:
+    from api.vendor.insightface.RetinaFace.rcnn.processing.bbox_transform import clip_boxes
+    from api.vendor.insightface.RetinaFace.rcnn.processing.generate_anchor import generate_anchors_fpn, anchors_plane
+    from api.vendor.insightface.RetinaFace.rcnn.processing.nms import gpu_nms_wrapper, cpu_nms_wrapper
+except ImportError:
+    from rcnn.processing.bbox_transform import clip_boxes
+    from rcnn.processing.generate_anchor import generate_anchors_fpn, anchors_plane
+    from rcnn.processing.nms import gpu_nms_wrapper, cpu_nms_wrapper
 
 USE_CPU = -1
 USE_GPU = 0
+
+MODEL_DIRECTORY = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'model')
 
 
 class RetinaFace:
     def __init__(
             self,
-            # Replace all instances of "cudnn_tune": "limited_workspace" from the
-            # R50-symbol by "cudnn_tune": "off" because could not turn off MXNET_CUDNN_AUTOTUNE_DEFAULT
+            # Replace all instances of "cudnn_tune": "limited_workspace" from the R50-symbol.json
+            # file by "cudnn_tune": "off" because could not turn off MXNET_CUDNN_AUTOTUNE_DEFAULT
             # refer to https://github.com/apache/incubator-mxnet/issues/8132#issuecomment-465806514
-            prefix='./model/R50',
+            prefix='R50',
             epoch=0,
             ctx_id=USE_CPU,
             network='net3',
-            nms=0.4,
+            nms=0.5,
             nocrop=False,
             decay4=0.5,
             vote=False
@@ -114,7 +122,7 @@ class RetinaFace:
 
         self._num_anchors = dict(zip(self.fpn_keys, [anchors.shape[0] for anchors in self._anchors_fpn.values()]))
 
-        sym, arg_params, aux_params = mx.model.load_checkpoint(prefix, epoch)
+        sym, arg_params, aux_params = mx.model.load_checkpoint(os.path.join(MODEL_DIRECTORY, prefix), epoch)
         if self.ctx_id >= 0:
             self.ctx = mx.gpu(self.ctx_id)
             self.nms = gpu_nms_wrapper(self.nms_threshold, self.ctx_id)

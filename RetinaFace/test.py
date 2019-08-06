@@ -32,7 +32,7 @@ USE_GPU = 0
 USE_CPU = -1
 FLIP = False
 
-detector = RetinaFace('./model/R50', 0, USE_CPU, 'net3')
+detector = RetinaFace('R50', 0, USE_CPU, 'net3')
 
 
 def read_image_file(image_file_name):
@@ -71,9 +71,12 @@ def draw_faces_and_landmarks(faces, landmarks, output_file_name):
         for face_index in range(number_of_detected_faces):
             box = faces[face_index].astype(np.int)
 
-            top_left_point = (box[0], box[1])
-            bottom_right_point = (box[2], box[3])
-            cv2.rectangle(img, top_left_point, bottom_right_point, COLOR_RED, LINE_THICKNESS)
+            face_left_x = box[0]
+            face_top_y = box[1]
+            face_right_x = box[2]
+            face_bottom_y = box[3]
+
+            cv2.rectangle(img, (face_left_x, face_top_y), (face_right_x, face_bottom_y), COLOR_RED, LINE_THICKNESS)
 
             if landmarks is not None:
                 landmark5 = landmarks[face_index].astype(np.int)
